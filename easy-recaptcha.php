@@ -9,75 +9,78 @@
 ***/
 
 
-
-
-
 /***
-* Add scripts & styles to WP login page
+* Check if EASY_RECAPTICAH Keys are defined in WP_config
 ***/
-add_action('login_enqueue_scripts', 'login_recaptcha_script');
-function login_recaptcha_script() {
+if (defined('EASY_RECAPTCHA_SITE_KEY') && defined('EASY_RECAPTCHA_SECRET')) {
 
-	// Register recaptcha script
-	wp_register_script('recaptcha-script', 'https://www.google.com/recaptcha/api.js');
-	// Enqueue registered recaptcha script
-	wp_enqueue_script('recaptcha-script');
+	/***
+	* Add scripts & styles to WP login page
+	***/
+	add_action('login_enqueue_scripts', 'login_recaptcha_script');
+	function login_recaptcha_script() {
 
-	// Register login styles
-	wp_enqueue_style( 'easy-recaptcha-styles', get_stylesheet_directory_uri() . '/css/login-style.css' );
-}
+		// Register recaptcha script
+		wp_register_script('recaptcha-script', 'https://www.google.com/recaptcha/api.js');
+		// Enqueue registered recaptcha script
+		wp_enqueue_script('recaptcha-script');
 
-/***
-* Add reuiqred elements to WP login form
-***/
-add_action( 'login_form', 'display_recaptcha_on_login' );
-function display_recaptcha_on_login() {
+		// Register login styles
+		wp_enqueue_style( 'easy-recaptcha-styles', plugin_dir_url(__FILE__) . '/easy-recaptcha-style.css' );
+	}
 
-	// Append g-recaptcha element with required SiteKey
-	echo "<div class='g-recaptcha' data-sitekey='" . EASY_RECAPTCHA_SITE_KEY . "'></div>";
+	/***
+	* Add reuiqred elements to WP login form
+	***/
+	add_action( 'login_form', 'display_recaptcha_on_login' );
+	function display_recaptcha_on_login() {
 
-	// Add simple JS script to make username and password fields required
-	echo "<script>document.getElementById('user_pass').setAttribute('required', 'required'); document.getElementById('user_login').setAttribute('required', 'required');</script>";
-}
+		// Append g-recaptcha element with required SiteKey
+		echo "<div class='g-recaptcha' data-sitekey='" . EASY_RECAPTCHA_SITE_KEY . "'></div>";
 
-/***
-* Process ReCaptcha response on WP login submit action
-***/
-add_filter('wp_authenticate_user', 'verify_recaptcha_on_login', 10, 2);
-function verify_recaptcha_on_login($user, $password) {
+		// Add simple JS script to make username and password fields required
+		echo "<script>document.getElementById('user_pass').setAttribute('required', 'required'); document.getElementById('user_login').setAttribute('required', 'required');</script>";
+	}
 
-	// If recaptcha exists
-	if (isset($_POST['g-recaptcha-response'])) {
+	/***
+	* Process ReCaptcha response on WP login submit action
+	***/
+	add_filter('wp_authenticate_user', 'verify_recaptcha_on_login', 10, 2);
+	function verify_recaptcha_on_login($user, $password) {
 
-		// Verify recaptcha with google
-		$response = wp_remote_get( 'https://www.google.com/recaptcha/api/siteverify?secret="' . EASY_RECAPTCHA_SECRET .  '"&response=' . $_POST['g-recaptcha-response'] );
+		// If recaptcha exists
+		if (isset($_POST['g-recaptcha-response'])) {
 
-		// If response data is returned
-		if ($response){
+			// Verify recaptcha with google
+			$response = wp_remote_get( 'https://www.google.com/recaptcha/api/siteverify?secret="' . EASY_RECAPTCHA_SECRET .  '"&response=' . $_POST['g-recaptcha-response'] );
 
-			// Decode response body
-			$response = json_decode($response['body'], true);
+			// If response data is returned
+			if ($response){
 
-			// If response is successful
-			if (true == $response['success']) {
+				// Decode response body
+				$response = json_decode($response['body'], true);
 
-				// Return WP User object
-				return $user;
+				// If response is successful
+				if (true == $response['success']) {
 
-			} else {
+					// Return WP User object
+					return $user;
 
-				// Return error if ReCaptcha fail
-				return new WP_Error( 'Captcha Invalid', __('<strong>ERROR</strong>: Please provide the reCAPTCHA response.') );
+				} else {
+
+					// Return error if ReCaptcha fail
+					return new WP_Error( 'Captcha Invalid', __('<strong>ERROR</strong>: Please provide the reCAPTCHA response.') );
+
+				}
 
 			}
 
+		} else {
+
+			// Return error if ReCaptcha is not submited with login attempt
+			return new WP_Error( 'Captcha Invalid 2', __('<strong>ERROR</strong>: Please provide the reCAPTCHA response.') );
+
 		}
 
-	} else {
-
-		// Return error if ReCaptcha is not submited with login attempt
-		return new WP_Error( 'Captcha Invalid 2', __('<strong>ERROR</strong>: Please provide the reCAPTCHA response.') );
-
 	}
-
 }
