@@ -52,7 +52,7 @@ if (defined('EASY_RECAPTCHA_SITE_KEY') && defined('EASY_RECAPTCHA_SECRET')) {
 		if (isset($_POST['g-recaptcha-response'])) {
 
 			// Verify recaptcha with google
-			$response = wp_remote_get( 'https://www.google.com/recaptcha/api/siteverify?secret="' . EASY_RECAPTCHA_SECRET .  '"&response=' . $_POST['g-recaptcha-response'] );
+			$response = wp_remote_get( 'https://www.google.com/recaptcha/api/siteverify?secret=' . EASY_RECAPTCHA_SECRET .  '&response=' . $_POST['g-recaptcha-response'] );
 
 			// If response data is returned
 			if ($response){
